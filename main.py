@@ -140,4 +140,105 @@ sort_column_map = {
     "신뢰도 순": "신뢰도",
     "동시 순": "동시",
 }
-sort_col = sort_column
+sort_col = sort_column_map[sort_option]
+
+# 최소 동시 일수 슬라이더 (1~10, 기본값 1)
+min_cooccur = st.sidebar.slider(
+    "최소 동시 일수:",
+    min_value=1,
+    max_value=10,
+    value=1,
+    step=1,
+)
+
+# 4. 데이터 필터링
+filtered_df = rules_df.copy()
+
+# 최소 동시 일수 조건 적용
+filtered_df = filtered_df[filtered_df["동시"] >= min_cooccur]
+
+# 메뉴 검색/선택 필터 적용
+if search_query:
+    filtered_df = filtered_df[
+        (filtered_df["조건"].str.contains(search_query, case=False, na=False))
+        | (filtered_df["결과"].str.contains(search_query, case=False, na=False))
+    ]
+elif selected_item != "전체":
+    filtered_df = filtered_df[
+        (filtered_df["조건"] == selected_item)
+        | (filtered_df["결과"] == selected_item)
+    ]
+
+# 정렬 적용
+filtered_df = filtered_df.sort_values(by=sort_col, ascending=False).reset_index(drop=True)
+
+filter_title = search_query if search_query else selected_item
+
+# 5. Plotly 가로 막대그래프 (상위 10개)
+st.subheader("📊 향상도 상위 10개 규칙")
+top10_df = filtered_df.sort_values(by="향상도", ascending=False).head(10).copy()
+
+if not top10_df.empty:
+    top10_df["규칙"] = top10_df["조건"] + " ➔ " + top10_df["결과"]
+    top10_df_sorted = top10_df.sort_values(by="향상도", ascending=True)
+
+    fig = px.bar(
+        top10_df_sorted,
+        x="향상도",
+        y="규칙",
+        orientation="h",
+        text="향상도",
+        title=f"향상도 TOP 10 ({filter_title} / 최소 동시 {min_cooccur}일 이상)",
+    )
+    fig.update_layout(yaxis_title="규칙 (조건 ➔ 결과)", xaxis_title="향상도")
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.info("조건 또는 검색어에 해당하는 규칙이 없습니다.")
+
+# 6. 연관 규칙 목록 표 출력
+st.subheader("📋 연관 규칙 목록")
+
+# 필터링 후 남아있는 규칙 수 표시 (한 줄)
+st.markdown(f"**현재 조건에 부합하는 규칙 수:** 총 **{len(filtered_df)}**개")
+
+st.dataframe(filtered_df, use_container_width=True)
+
+st.divider()
+
+# 7. 함께 나온 적 없는 짝 화면
+st.subheader("🚫 함께 나온 적 없는 짝 찾기")
+
+unpaired_target_item = st.selectbox(
+    "조회할 메뉴를 선택해 주세요 (위의 좁혀 보기와 별도):",
+    item_list,
+    key="unpaired_item_select",
+)
+
+target_item_days = item_counts[unpaired_target_item]
+
+# 함께 나온 적 없는 메뉴 탐색 (동시 등장 횟수가 0이고, 혼자서는 10일 이상 나온 메뉴)
+unpaired_list = []
+for other_item in item_list:
+    if other_item == unpaired_target_item:
+        continue
+
+    # 두 항목의 pair 키 생성
+    pair_key = tuple(sorted([unpaired_target_item, other_item]))
+
+    # 한번도 같이 나온 적 없음 (pair_counts에 없음) & 상대 메뉴 등장 횟수 >= 10
+    if pair_counts[pair_key] == 0 and item_counts[other_item] >= 10:
+        unpaired_list.append({
+            "메뉴": other_item,
+            "나온 날 수": item_counts[other_item],
+        })
+
+unpaired_df = pd.DataFrame(unpaired_list)
+
+st.write(f"선택한 메뉴 **'{unpaired_target_item}'**이(가) 나온 날 수: **{target_item_days}일**")
+
+if not unpaired_df.empty:
+    # 나온 날 수 기준 내림차순 정렬
+    unpaired_df = unpaired_df.sort_values(by="나온 날 수", ascending=False).reset_index(drop=True)
+    st.dataframe(unpaired_df, use_container_width=True)
+else:
+    st.info(f"혼자 10일 이상 나오면서 '{unpaired_target_item}'와 한 번도 함께 나오지 않은 메뉴가 없습니다.")
