@@ -70,4 +70,7 @@ def load_and_process_data():
         lift_b_a = conf_b_a / (item_counts[item_a] / total_days)
 
         rules_data.append({
-            "
+            "조건": item_b,
+            "결과": item_a,
+            "동시": count_ab,
+            "지지도": round(support, 4),
