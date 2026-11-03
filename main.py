@@ -56,21 +56,8 @@ def load_and_process_data():
         conf_a_b = count_ab / item_counts[item_a]
         lift_a_b = conf_a_b / (item_counts[item_b] / total_days)
 
-        rules_data.append({
-            "조건": item_a,
-            "결과": item_b,
-            "동시": count_ab,
-            "지지도": round(support, 4),
-            "신뢰도": round(conf_a_b, 4),
-            "향상도": round(lift_a_b, 4)
-        })
+        rules_data.append({"조건": item_a, "결과": item_b, "동시": count_ab, "지지도": round(support, 4), "신뢰도": round(conf_a_b, 4), "향상도": round(lift_a_b, 4)})
 
         # B -> A
         conf_b_a = count_ab / item_counts[item_b]
-        lift_b_a = conf_b_a / (item_counts[item_a] / total_days)
-
-        rules_data.append({
-            "조건": item_b,
-            "결과": item_a,
-            "동시": count_ab,
-            "지지도": round(support, 4),
+        lift_b_a = conf_b_a / (item_counts[item_a] / total
