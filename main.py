@@ -73,3 +73,9 @@ def load_and_process_data():
 
         rules_data.append(
             {
+                "조건": item_b,
+                "결과": item_a,
+                "동시": count_ab,
+                "지지도": round(support, 4),
+                "신뢰도": round(conf_b_a, 4),
+                "향상도": round(lift_b_a, 4),
