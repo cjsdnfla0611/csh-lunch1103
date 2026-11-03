@@ -52,12 +52,92 @@ def load_and_process_data():
         # 지지도 = P(A ∩ B)
         support = count_ab / total_days
 
-        # A -> B
+        # 각 메뉴의 단독 지지도
+        supp_a = item_counts[item_a] / total_days
+        supp_b = item_counts[item_b] / total_days
+
+        # A -> B 규칙 계산
         conf_a_b = count_ab / item_counts[item_a]
-        lift_a_b = conf_a_b / (item_counts[item_b] / total_days)
+        lift_a_b = conf_a_b / supp_b
 
-        rules_data.append({"조건": item_a, "결과": item_b, "동시": count_ab, "지지도": round(support, 4), "신뢰도": round(conf_a_b, 4), "향상도": round(lift_a_b, 4)})
+        rules_data.append({
+            "조건": item_a,
+            "결과": item_b,
+            "동시": count_ab,
+            "지지도": round(support, 4),
+            "신뢰도": round(conf_a_b, 4),
+            "향상도": round(lift_a_b, 4),
+        })
 
-        # B -> A
+        # B -> A 규칙 계산
         conf_b_a = count_ab / item_counts[item_b]
-        lift_b_a = conf_b_a / (item_counts[item_a] / total
+        lift_b_a = conf_b_a / supp_a
+
+        rules_data.append({
+            "조건": item_b,
+            "결과": item_a,
+            "동시": count_ab,
+            "지지도": round(support, 4),
+            "신뢰도": round(conf_b_a, 4),
+            "향상도": round(lift_b_a, 4),
+        })
+
+    rules_df = pd.DataFrame(rules_data)
+    unique_pairs_count = len(pair_counts)
+
+    return (
+        rules_df,
+        total_days,
+        len(all_items),
+        unique_pairs_count,
+        sorted(list(all_items)),
+        item_counts,
+        pair_counts,
+    )
+
+
+# 1. 데이터 로드
+try:
+    (
+        rules_df,
+        total_days,
+        num_items,
+        num_pairs,
+        item_list,
+        item_counts,
+        pair_counts,
+    ) = load_and_process_data()
+except Exception as e:
+    st.error(f"데이터를 불러오는 중 오류가 발생했습니다: {e}")
+    st.stop()
+
+# 2. 타이틀 및 요약 정보 (한 줄로 표시)
+st.title("🍽️ 송탄고 급식 메뉴 연관 규칙 찾기")
+
+st.markdown(
+    f"**급식 일수:** {total_days}일 &nbsp;|&nbsp; "
+    f"**메뉴 종류 수:** {num_items}개 &nbsp;|&nbsp; "
+    f"**함께 나온 적이 있는 메뉴 쌍의 수:** {num_pairs}쌍"
+)
+
+# 3. 사이드바 필터 및 검색 옵션
+st.sidebar.header("🔍 필터 및 검색 옵션")
+
+# 텍스트 검색창
+search_query = st.sidebar.text_input("메뉴 이름 직접 검색:", placeholder="예: 김치, 닭갈비").strip()
+
+# 드롭다운 선택 필터
+selected_item = st.sidebar.selectbox("메뉴 목록에서 선택:", ["전체"] + item_list)
+
+sort_option = st.sidebar.radio(
+    "정렬 기준 선택:",
+    ["향상도 순", "신뢰도 순", "동시 순"],
+    index=0,
+)
+
+sort_column_map = {
+    "향상도 순": "향상도",
+    "신뢰도 순": "신뢰도",
+    "동시 순": "동시",
+}
+sort_col = sort_column
