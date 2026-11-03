@@ -101,7 +101,7 @@ except Exception as e:
     st.error(f"데이터를 불러오는 중 오류가 발생했습니다: {e}")
     st.stop()
 
-# 2. 타이틀 및 요약 정보
+# 2. 타이틀 및 요약 정보 (한 줄로 표시)
 st.title("🍽️ 송탄고 급식 메뉴 연관 규칙 찾기")
 
 st.markdown(
@@ -110,7 +110,7 @@ st.markdown(
     f"**함께 나온 적이 있는 메뉴 쌍의 수:** {num_pairs}쌍"
 )
 
-# 3. 사이드바 필터
+# 3. 사이드바 필터 및 정렬
 st.sidebar.header("필터 및 정렬 옵션")
 
 selected_item = st.sidebar.selectbox(
@@ -130,7 +130,7 @@ sort_column_map = {
 }
 sort_col = sort_column_map[sort_option]
 
-# 4. 필터링 및 정렬
+# 4. 데이터 필터링 및 정렬
 filtered_df = rules_df.copy()
 if selected_item != "전체":
     filtered_df = filtered_df[
@@ -161,3 +161,8 @@ if not top10_df.empty:
     fig.update_layout(yaxis_title="규칙 (조건 ➔ 결과)", xaxis_title="향상도")
     st.plotly_chart(fig, use_container_width=True)
 else:
+    st.info("조건에 해당하는 규칙이 없습니다.")
+
+# 6. 연관 규칙 목록 표 출력
+st.subheader("📋 연관 규칙 목록")
+st.dataframe(filtered_df, use_container_width=True)
